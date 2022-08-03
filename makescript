@@ -1,0 +1,11 @@
+#!/bin/bash
+export OMP_NUM_THREADS=1
+
+g++ -fopenmp -O3 main.cpp -I/home/mansande/virtual/environment/lib/python3.9/site-packages/dace/runtime/include \
+ ../.dacecache/single_map_complex64/src/cpu/single_map_complex64.cpp ../.dacecache/single_map_complex64/include/single_map_complex64.h \
+ ../.dacecache/single_map_complex128/src/cpu/single_map_complex128.cpp ../.dacecache/single_map_complex128/include/single_map_complex128.h \
+ ../.dacecache/single_map_float32/src/cpu/single_map_float32.cpp ../.dacecache/single_map_float32/include/single_map_float32.h \
+ ../.dacecache/single_map_float64/src/cpu/single_map_float64.cpp ../.dacecache/single_map_float64/include/single_map_float64.h \
+ ../.dacecache/single_map_Mcomplex64/src/cpu/single_map_Mcomplex64.cpp ../.dacecache/single_map_Mcomplex64/include/single_map_Mcomplex64.h \
+ ../.dacecache/single_map_Mcomplex128/src/cpu/single_map_Mcomplex128.cpp ../.dacecache/single_map_Mcomplex128/include/single_map_Mcomplex128.h \
+
