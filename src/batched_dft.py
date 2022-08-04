@@ -269,7 +269,7 @@ def batched_dft_r2r_N2(
 def batched_dftpsidhtr2r(): 
     pass
 
-def test_batched_DFTc(Nr : int, dtype_input : str):
+def test_batched_DFTc(backend : str, Nr : int, dtype_input : str, aoptBool : bool):
 
     if dtype_input == 'complex128':
         dtype = np.complex128
@@ -299,6 +299,11 @@ def test_batched_DFTc(Nr : int, dtype_input : str):
     sdfg.simplify()    
     sdfg.validate()
     sdfg.is_valid()
+
+    if backend == 'GPU':
+        if aoptBool:
+            aopt.auto_optimize(sdfg, dc.DeviceType.GPU)
+        sdfg.apply_gpu_transformations()
 
     #aopt.auto_optimize(sdfg, dc.DeviceType.CPU)
     #sdfg.apply_transformations([MapFusion, MapWCRFusion])
@@ -333,7 +338,7 @@ def test_batched_DFTc(Nr : int, dtype_input : str):
     #assert (1e-10>max(abs(x-y)))
     return sdfg_name
 
-def test_batched_DFTr2r(Nr : int, dtype_input : str, aoptBool : bool):
+def test_batched_DFTr2r(backend : str, Nr : int, dtype_input : str, aoptBool : bool):
     if dtype_input == 'complex128':
         dtype = np.float64
         dfttype = np.float64
@@ -363,18 +368,21 @@ def test_batched_DFTr2r(Nr : int, dtype_input : str, aoptBool : bool):
     sdfg.add_constant('DFTI', DFTi)
     
     bstate = batched_dftr2r(sdfg, dtype, N, True, 'xr', 'xi', 'xr', 'xi')
-    #state1 = transient_connector(sdfg, False, 't1', 'x', None, None)
-    #sdfg.add_edge(bstate, state1, dc.InterstateEdge())
     
     sdfg.fill_scope_connectors()
-    #sdfg.apply_strict_transformations()
+    sdfg.apply_strict_transformations()
 
     sdfg.simplify()    
     sdfg.validate()
     sdfg.is_valid()
 
-    if aoptBool:
+    if aoptBool and backend == 'CPU':
         aopt.auto_optimize(sdfg, dc.DeviceType.CPU)
+    
+    if backend == 'GPU':
+        if aoptBool:
+            aopt.auto_optimize(sdfg, dc.DeviceType.GPU)
+        sdfg.apply_gpu_transformations()
     
     #sdfg.apply_transformations([MapFusion, MapWCRFusion])
     #sdfg.apply_transformations(MapReduceFusion)
@@ -406,7 +414,7 @@ def test_batched_DFTr2r(Nr : int, dtype_input : str, aoptBool : bool):
 
     return sdfg_name
 
-def test_batched_DFT_r2r_N2(Nr : int, dtype_input : str, aoptBool : bool):
+def test_batched_DFT_r2r_N2(backend : str, Nr : int, dtype_input : str, aoptBool : bool):
     if dtype_input == 'complex128':
         dtype = np.float64
         dfttype = np.float64
@@ -438,9 +446,7 @@ def test_batched_DFT_r2r_N2(Nr : int, dtype_input : str, aoptBool : bool):
     sdfg.add_constant('DFTI', DFTi)
     
     bstate = batched_dft_r2r_N2(sdfg, dtype, N, True, 'x', 'x')
-    #state1 = transient_connector(sdfg, False, 't1', 'x', None, None)
-    #sdfg.add_edge(bstate, state1, dc.InterstateEdge())
-    
+
     sdfg.fill_scope_connectors()
     sdfg.apply_strict_transformations()
 
@@ -448,8 +454,14 @@ def test_batched_DFT_r2r_N2(Nr : int, dtype_input : str, aoptBool : bool):
     sdfg.validate()
     sdfg.is_valid()
 
-    if aoptBool:
+    if aoptBool and backend == 'CPU':
         aopt.auto_optimize(sdfg, dc.DeviceType.CPU)
+    
+    if backend == 'GPU':
+        if aoptBool:
+            aopt.auto_optimize(sdfg, dc.DeviceType.GPU)
+        sdfg.apply_gpu_transformations()
+
 
     #sdfg.apply_transformations([MapFusion, MapWCRFusion])
     #sdfg.apply_transformations(MapReduceFusion)
@@ -499,66 +511,19 @@ def main():
     
     list_of_functions = []
 
+    for N in [64, 128, 256, 512, 1024]:
+        print(N)
+        list_of_functions.append(test_batched_DFTc      (backend = 'CPU', Nr=N, dtype_input='complex128', aoptBool=False))
+        list_of_functions.append(test_batched_DFTr2r    (backend = 'CPU', Nr=N, dtype_input='complex128', aoptBool=False))
+        list_of_functions.append(test_batched_DFTr2r    (backend = 'CPU', Nr=N, dtype_input='complex128', aoptBool=True))
+        list_of_functions.append(test_batched_DFT_r2r_N2(backend = 'CPU', Nr=N, dtype_input='complex128', aoptBool=False))    
+        list_of_functions.append(test_batched_DFT_r2r_N2(backend = 'CPU', Nr=N, dtype_input='complex128', aoptBool=True))
+        list_of_functions.append(test_batched_DFTc      (backend = 'CPU', Nr=N, dtype_input='complex64' , aoptBool=False))
+        list_of_functions.append(test_batched_DFTr2r    (backend = 'CPU', Nr=N, dtype_input='complex64' , aoptBool=False))
+        list_of_functions.append(test_batched_DFTr2r    (backend = 'CPU', Nr=N, dtype_input='complex64' , aoptBool=True))
+        list_of_functions.append(test_batched_DFT_r2r_N2(backend = 'CPU', Nr=N, dtype_input='complex64' , aoptBool=False))
+        list_of_functions.append(test_batched_DFT_r2r_N2(backend = 'CPU', Nr=N, dtype_input='complex64' , aoptBool=True))
 
-    N = 64  
-    list_of_functions.append(test_batched_DFTc      (Nr=N, dtype_input='complex128'))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex128', aoptBool=False))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex128', aoptBool=True))
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex128', aoptBool=False))    
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex128', aoptBool=True))
-    list_of_functions.append(test_batched_DFTc      (Nr=N, dtype_input='complex64'))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex64', aoptBool=False))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex64', aoptBool=True))
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex64', aoptBool=False))
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex64', aoptBool=True))
-
-    N = 128
-    list_of_functions.append(test_batched_DFTc      (Nr=N, dtype_input='complex128'))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex128', aoptBool=False))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex128', aoptBool=True))
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex128', aoptBool=False))    
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex128', aoptBool=True))
-    list_of_functions.append(test_batched_DFTc      (Nr=N, dtype_input='complex64'))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex64', aoptBool=False))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex64', aoptBool=True))
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex64', aoptBool=False))
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex64', aoptBool=True))
-
-    N = 256 
-    list_of_functions.append(test_batched_DFTc      (Nr=N, dtype_input='complex128'))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex128', aoptBool=False))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex128', aoptBool=True))
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex128', aoptBool=False))    
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex128', aoptBool=True))
-    list_of_functions.append(test_batched_DFTc      (Nr=N, dtype_input='complex64'))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex64', aoptBool=False))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex64', aoptBool=True))
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex64', aoptBool=False))
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex64', aoptBool=True))
-
-    N = 512 
-    list_of_functions.append(test_batched_DFTc      (Nr=N, dtype_input='complex128'))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex128', aoptBool=False))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex128', aoptBool=True))
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex128', aoptBool=False))    
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex128', aoptBool=True))
-    list_of_functions.append(test_batched_DFTc      (Nr=N, dtype_input='complex64'))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex64', aoptBool=False))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex64', aoptBool=True))
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex64', aoptBool=False))
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex64', aoptBool=True))
-
-    N = 1024 
-    list_of_functions.append(test_batched_DFTc      (Nr=N, dtype_input='complex128'))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex128', aoptBool=False))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex128', aoptBool=True))
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex128', aoptBool=False))    
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex128', aoptBool=True))
-    list_of_functions.append(test_batched_DFTc      (Nr=N, dtype_input='complex64'))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex64', aoptBool=False))
-    list_of_functions.append(test_batched_DFTr2r    (Nr=N, dtype_input='complex64', aoptBool=True))
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex64', aoptBool=False))
-    list_of_functions.append(test_batched_DFT_r2r_N2(Nr=N, dtype_input='complex64', aoptBool=True))
 
     #sdfg_name4, time4 = test_batched_DFT_r2r_optimized(Nr)
     #sdfg_name5, time5 = test_batched_DFT_r2r_N2_optimized(Nr=N)
