@@ -1,3 +1,9 @@
+#from ugly_print_code import *
+import numpy as np
+import dace as dc
+import os
+
+
 def create_all_main_files(list_of_functions,list_of_native_type,lsit_of_dimensions,N):
 
     for i, function in enumerate(list_of_functions):
