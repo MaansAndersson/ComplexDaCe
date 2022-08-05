@@ -83,6 +83,7 @@ def batched_dftc(
                    dc.Memlet(data=tmp_node.data, subset='0:N,0:N'))
 
     red_node = state.add_reduce('lambda a,b: a+b', axes=[1], identity=0)
+    #red_node = state.add_
     
     state.add_nedge(tmp_node,
                    red_node,
@@ -280,8 +281,8 @@ def test_batched_DFTc(backend : str, Nr : int, dtype_input : str, aoptBool : boo
         
     sdfg_name = 'batched_DFTc'+dtype_input+'_'+str(Nr)
     sdfg = dc.SDFG(sdfg_name)
-    N = dc.symbol('N', dtype=dc.int64)
-    #M = dc.symbol('M', dtype=dc.int64)
+    N = dc.symbol('N', dtype=dc.int32)
+    #M = dc.symbol('M', dtype=dc.int32)
 
     sdfg.add_array('x', [N], dtype=dtype)
 
@@ -294,16 +295,16 @@ def test_batched_DFTc(backend : str, Nr : int, dtype_input : str, aoptBool : boo
     bstate = batched_dftc(sdfg, dtype, N, True, 'x', 'x')
 
     sdfg.fill_scope_connectors()
-    sdfg.apply_strict_transformations()
+    #sdfg.apply_strict_transformations()
 
-    sdfg.simplify()    
-    sdfg.validate()
-    sdfg.is_valid()
+    #sdfg.simplify()    
 
     if backend == 'GPU':
         if aoptBool:
             aopt.auto_optimize(sdfg, dc.DeviceType.GPU)
         sdfg.apply_gpu_transformations()
+    sdfg.validate()
+    sdfg.is_valid() 
 
     #aopt.auto_optimize(sdfg, dc.DeviceType.CPU)
     #sdfg.apply_transformations([MapFusion, MapWCRFusion])
@@ -354,8 +355,8 @@ def test_batched_DFTr2r(backend : str, Nr : int, dtype_input : str, aoptBool : b
 
     sdfg_name = 'batched_DFTr2r'+'_'+dtype_input+'_'+aopt_str+'_'+str(Nr)
     sdfg = dc.SDFG(sdfg_name)
-    N = dc.symbol('N', dtype=dc.int64)
-    #M = dc.symbol('M', dtype=dc.int64)
+    N = dc.symbol('N', dtype=dc.int32)
+    #M = dc.symbol('M', dtype=dc.int32)
 
     sdfg.add_array('xr', [N], dtype=dtype)
     sdfg.add_array('xi', [N], dtype=dtype)
@@ -370,7 +371,7 @@ def test_batched_DFTr2r(backend : str, Nr : int, dtype_input : str, aoptBool : b
     bstate = batched_dftr2r(sdfg, dtype, N, True, 'xr', 'xi', 'xr', 'xi')
     
     sdfg.fill_scope_connectors()
-    sdfg.apply_strict_transformations()
+    #sdfg.apply_strict_transformations()
 
     sdfg.simplify()    
     sdfg.validate()
@@ -430,8 +431,8 @@ def test_batched_DFT_r2r_N2(backend : str, Nr : int, dtype_input : str, aoptBool
 
     sdfg_name = 'batched_DFTr2r_N2'+'_'+dtype_input+'_'+aopt_str+'_'+str(Nr)
     sdfg = dc.SDFG(sdfg_name)
-    N = dc.symbol('N', dtype=dc.int64)
-    #M = dc.symbol('M', dtype=dc.int64)
+    N = dc.symbol('N', dtype=dc.int32)
+    #M = dc.symbol('M', dtype=dc.int32)
     
     sdfg.add_array('x', [N,2], dtype=dtype)
     #sdfg.add_array('x2', [N], dtype=dc.complex128)
@@ -448,7 +449,7 @@ def test_batched_DFT_r2r_N2(backend : str, Nr : int, dtype_input : str, aoptBool
     bstate = batched_dft_r2r_N2(sdfg, dtype, N, True, 'x', 'x')
 
     sdfg.fill_scope_connectors()
-    sdfg.apply_strict_transformations()
+    #sdfg.apply_strict_transformations()
 
     sdfg.simplify()    
     sdfg.validate()
@@ -508,21 +509,23 @@ def release_wrapper_function(list_of_functions):
     pass
 
 def main():
-    
+    #dc.Config.set('profiling', value=True)
+    #dc.Config.set('treps', value=100)
     list_of_functions = []
 
-    for N in [64, 128, 256, 512, 1024]:
+    for N in [32, 64, 128]: #, 128, 256, 512, 1024]:
         print(N)
-        list_of_functions.append(test_batched_DFTc      (backend = 'CPU', Nr=N, dtype_input='complex128', aoptBool=False))
-        list_of_functions.append(test_batched_DFTr2r    (backend = 'CPU', Nr=N, dtype_input='complex128', aoptBool=False))
-        list_of_functions.append(test_batched_DFTr2r    (backend = 'CPU', Nr=N, dtype_input='complex128', aoptBool=True))
-        list_of_functions.append(test_batched_DFT_r2r_N2(backend = 'CPU', Nr=N, dtype_input='complex128', aoptBool=False))    
-        list_of_functions.append(test_batched_DFT_r2r_N2(backend = 'CPU', Nr=N, dtype_input='complex128', aoptBool=True))
-        list_of_functions.append(test_batched_DFTc      (backend = 'CPU', Nr=N, dtype_input='complex64' , aoptBool=False))
-        list_of_functions.append(test_batched_DFTr2r    (backend = 'CPU', Nr=N, dtype_input='complex64' , aoptBool=False))
-        list_of_functions.append(test_batched_DFTr2r    (backend = 'CPU', Nr=N, dtype_input='complex64' , aoptBool=True))
-        list_of_functions.append(test_batched_DFT_r2r_N2(backend = 'CPU', Nr=N, dtype_input='complex64' , aoptBool=False))
-        list_of_functions.append(test_batched_DFT_r2r_N2(backend = 'CPU', Nr=N, dtype_input='complex64' , aoptBool=True))
+        list_of_functions.append(test_batched_DFTc      (backend = 'GPU', Nr=N, dtype_input='complex128', aoptBool=False))
+        list_of_functions.append(test_batched_DFTr2r    (backend = 'GPU', Nr=N, dtype_input='complex128', aoptBool=False))
+        #list_of_functions.append(test_batched_DFTr2r    (backend = 'GPU', Nr=N, dtype_input='complex128', aoptBool=True))
+        list_of_functions.append(test_batched_DFT_r2r_N2(backend = 'GPU', Nr=N, dtype_input='complex128', aoptBool=False))    
+        list_of_functions.append(test_batched_DFT_r2r_N2(backend = 'GPU', Nr=N, dtype_input='complex128', aoptBool=True))
+        print('-----')
+        # list_of_functions.append(test_batched_DFTc      (backend = 'GPU', Nr=N, dtype_input='complex64' , aoptBool=False))
+        # list_of_functions.append(test_batched_DFTr2r    (backend = 'GPU', Nr=N, dtype_input='complex64' , aoptBool=False))
+        # #list_of_functions.append(test_batched_DFTr2r    (backend = 'GPU', Nr=N, dtype_input='complex64' , aoptBool=True))
+        # list_of_functions.append(test_batched_DFT_r2r_N2(backend = 'GPU', Nr=N, dtype_input='complex64' , aoptBool=False))
+        # list_of_functions.append(test_batched_DFT_r2r_N2(backend = 'GPU', Nr=N, dtype_input='complex64' , aoptBool=True))
 
 
     #sdfg_name4, time4 = test_batched_DFT_r2r_optimized(Nr)
