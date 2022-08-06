@@ -535,8 +535,9 @@ def main():
     list_of_functions = []
 
     for N in [32, 64, 128, 256, 512]:
-        # print(N)
-        # print('DFTc')
+
+        print(N)
+        print('DFTc')
         list_of_functions.append(test_batched_DFTc      (backend = 'CPU', Nr=N, dtype_input='complex128', aoptBool=False, tasklet_type='Python'))
         list_of_functions.append(test_batched_DFTc      (backend = 'CPU', Nr=N, dtype_input='complex128', aoptBool=False, tasklet_type='CPP'))
         #list_of_functions.append(test_batched_DFTc      (backend = 'CPU', Nr=N, dtype_input='complex128', aoptBool=True))
@@ -546,7 +547,7 @@ def main():
         print('DFT_r2r_N2')
         list_of_functions.append(test_batched_DFT_r2r_N2(backend = 'CPU', Nr=N, dtype_input='complex128', aoptBool=False))    
         list_of_functions.append(test_batched_DFT_r2r_N2(backend = 'CPU', Nr=N, dtype_input='complex128', aoptBool=True))
-        # print('-----')
+        print('-----')
         #ist_of_functions.append(test_batched_DFTc      (backend = 'CPU', Nr=N, dtype_input='complex64', aoptBool=False, tasklet_type='Python'))
         list_of_functions.append(test_batched_DFTc      (backend = 'CPU', Nr=N, dtype_input='complex64', aoptBool=False, tasklet_type='CPP'))
         list_of_functions.append(test_batched_DFTr2r    (backend = 'CPU', Nr=N, dtype_input='complex64' , aoptBool=False))
