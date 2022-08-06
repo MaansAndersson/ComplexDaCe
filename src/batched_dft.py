@@ -531,7 +531,7 @@ def release_wrapper_function(list_of_functions):
 def main():
     dc.Config.set('profiling', value=True)
     dc.Config.set('treps', value=1000)
-    #dc.Config.set('')
+    dc.Config.set('profiling_status',value=False)
     list_of_functions = []
 
     for N in [32, 64, 128, 256, 512]:
