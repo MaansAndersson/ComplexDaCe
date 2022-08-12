@@ -9,6 +9,9 @@ from dace.transformation.dataflow import (MapReduceFusion, MapFusion,
                                       MapWCRFusion)
 from dace.transformation.auto import auto_optimize as aopt
 
+from dace.sdfg.infer_types import set_default_schedule_and_storage_types
+    
+
 def make_DFT(r, dtype):
     dftr = np.zeros(shape = (r,r), dtype = dtype)
     dfti = np.zeros(shape = (r,r), dtype = dtype)
@@ -82,14 +85,24 @@ def batched_dftc(
             code='''out=(inp[0]*(std::complex<float>(DFTR[j+N*i],DFTI[j+N*i])));'''
 
     tasklet, map_entry, map_exit = state.add_mapped_tasklet(
-    name        =operator_name, 
-    map_ranges  =ranges_dic,
-    inputs      =input_dic,
-    code        =code,
-    language    =language, 
-    outputs     =outputs
+    name        = operator_name, 
+    map_ranges  = ranges_dic,
+    inputs      = input_dic,
+    code        = code,
+    language    = language, 
+    outputs     = outputs,
+    schedule    = dc.dtypes.ScheduleType.Default,
+    unroll_map  = False,
+    propagate   = True,
+
     )
+
     
+    # schedule    =dc.dtypes.OMPScheduleType.Default,
+    # print(dc.dtypes.ScheduleType)
+    # #print(dc.dtypes.ScheduleType.Static)
+    # print(dc.dtypes.ScheduleType.Guided)
+
     state.add_nedge(src_node,
                    map_entry,
                    dc.Memlet(data=src_node.data, subset='0:N,0:M'))
@@ -98,7 +111,10 @@ def batched_dftc(
                    tmp_node,
                    dc.Memlet(data=tmp_node.data, subset='0:N,0:N,0:M'))
 
-    red_node = state.add_reduce('lambda a,b: a+b', axes=[1], identity=0)
+    red_node = state.add_reduce(wcr='lambda a,b: a+b',
+                                axes=[1], 
+                                identity=0,
+                                schedule=dc.dtypes.ScheduleType.Default)
     #red_node = state.add_
     
     state.add_nedge(tmp_node,
@@ -232,7 +248,7 @@ out2=(x__*B + y__*A);
 def batched_dft_r2r_AoS(
              sdfg : dc.sdfg,  
              dtype : None,
-             N : int,   
+             N : str,   
              M : str,
              is_start_state : bool,              
              src : str, 
@@ -257,10 +273,11 @@ def batched_dft_r2r_AoS(
     elif dst.startswith('x'):
         dst_node = state.add_write(dst)
 
-    sdfg.add_transient(operator_name+'t', shape=[N, N, M], dtype=dtype)
+    sdfg.add_transient(operator_name+'t', shape=[str(N), str(N), str(M)], dtype=dtype)
     tmp_node = state.add_access(operator_name+'t')
 
     ranges_dic = {'j' : '0:N', 'i' : '0:N', 'k' : '0:M:2'} 
+    #ranges_dic = {'j' : '0:N', 'i' : '0:N', 'k' : '0:M:2'} 
     input_dic  = {'inp' : dc.Memlet(data=src_node.data, subset=('j:j,k:k+1+1'))} 
     outputs    = {'out' : dc.Memlet(data=tmp_node.data, subset=('i,j,k:k+1+1'))}
 
@@ -530,7 +547,7 @@ def test_batched_DFTc(backend : str, Nr : int, Mr : int, dtype_input : str, aopt
     #aopt.auto_optimize(sdfg, dc.DeviceType.CPU)
     #sdfg.apply_transformations([MapFusion, MapWCRFusion])
     #sdfg.apply_transformations(MapReduceFusion)
-
+    
     F = sdfg.compile()
     M = Mr
     N = Nr
@@ -551,10 +568,10 @@ def test_batched_DFTc(backend : str, Nr : int, Mr : int, dtype_input : str, aopt
 
     if dtype_input == 'complex128':
         #assert np.all((1e-10>abs(x-y)))
-        create_main_fileDFTc_complex128(sdfg_name, dtype_input, N)
+        create_main_fileDFTc_complex128(sdfg_name, dtype_input, N, M)
     elif dtype_input == 'complex64':
         #assert np.all((1e-4>abs(x-y)))
-        create_main_fileDFTc_complex64(sdfg_name, dtype_input, N)
+        create_main_fileDFTc_complex64(sdfg_name, dtype_input, N, M)
 
 
 
@@ -631,10 +648,10 @@ def test_batched_DFTr2r(backend : str, Nr : int, Mr : int, dtype_input : str, ao
 
     if dtype_input == 'complex128':
         #assert np.all(1e-10>(abs(x-y)))
-        create_main_fileDFTr2r_complex128(sdfg_name, dtype_input, N)
+        create_main_fileDFTr2r_complex128(sdfg_name, dtype_input, N, M)
     elif dtype_input == 'complex64': 
         #assert np.all(1e-4>(abs(x-y)))
-        create_main_fileDFTr2r_complex64(sdfg_name, dtype_input, N)
+        create_main_fileDFTr2r_complex64(sdfg_name, dtype_input, N, M)
 
     return sdfg_name
 
@@ -705,10 +722,10 @@ def test_batched_DFT_r2r_N2(backend : str, Nr : int, Mr : int, dtype_input : str
     print(xx-y)
     if dtype_input == 'complex128':
         #assert np.all(1e-10>(abs(xx-y)))
-        create_main_fileDFTr2rN2_complex128(sdfg_name, dtype_str, N)
+        create_main_fileDFTr2rN2_complex128(sdfg_name, dtype_str, N, M)
     elif dtype_input == 'complex64': 
         #assert np.all(1e-4>(abs(xx-y)))
-        create_main_fileDFTr2rN2_complex64(sdfg_name, dtype_str, N)
+        create_main_fileDFTr2rN2_complex64(sdfg_name, dtype_str, N, M)
 
 
     return sdfg_name
@@ -791,10 +808,10 @@ def test_batched_DFT_r2r_SoA(backend : str, Nr : int, Mr : int, dtype_input : st
     #print(y)
     #if dtype_input == 'complex128':
         #assert np.all(1e-10>(abs(xx-y)))
-        # create_main_fileDFTr2rN2_complex128(sdfg_name, dtype_str, N)
+        # create_main_fileDFTr2rN2_complex128(sdfg_name, dtype_str, N, M)
     #elif dtype_input == 'complex64': 
         #assert np.all(1e-4>(abs(xx-y)))
-        # create_main_fileDFTr2rN2_complex64(sdfg_name, dtype_str, N)
+        # create_main_fileDFTr2rN2_complex64(sdfg_name, dtype_str, N, M)
 
 
     return sdfg_name
@@ -828,7 +845,7 @@ def test_batched_DFT_r2r_AoS(backend : str, Nr : int, Mr : int, dtype_input : st
     sdfg.add_constant('DFTR', DFTr) 
     sdfg.add_constant('DFTI', DFTi)
     
-    bstate = batched_dft_r2r_AoS(sdfg, dtype, N, M, True, 'x', 'x')
+    bstate = batched_dft_r2r_AoS(sdfg, dtype, str(Nr), str(Mr), True, 'x', 'x')
 
     sdfg.fill_scope_connectors()
     #sdfg.apply_strict_transformations()
@@ -877,10 +894,10 @@ def test_batched_DFT_r2r_AoS(backend : str, Nr : int, Mr : int, dtype_input : st
     #print(y)
     #if dtype_input == 'complex128':
         #assert np.all(1e-10>(abs(xx-y)))
-        # create_main_fileDFTr2rN2_complex128(sdfg_name, dtype_str, N)
+        # create_main_fileDFTr2rN2_complex128(sdfg_name, dtype_str, N, M)
     #elif dtype_input == 'complex64': 
         #assert np.all(1e-4>(abs(xx-y)))
-        # create_main_fileDFTr2rN2_complex64(sdfg_name, dtype_str, N)
+        # create_main_fileDFTr2rN2_complex64(sdfg_name, dtype_str, N, M)
 
 
     return sdfg_name
@@ -902,15 +919,15 @@ def release_wrapper_function(list_of_functions):
 
 def main():
     dc.Config.set('profiling', value=True)
-    dc.Config.set('treps', value=1000)
+    dc.Config.set('treps', value=100)
     dc.Config.set('profiling_status',value=False)
     list_of_functions = []
-    M = 32
+    M = 64
     for N in [32, 64, 128, 256, 512]:
 
         print(N)
         print('DFTc')
-        #list_of_functions.append(test_batched_DFTc      (backend = 'CPU', Nr=N, Mr=M, dtype_input='complex128', aoptBool=False, tasklet_type='Python'))
+        list_of_functions.append(test_batched_DFTc      (backend = 'CPU', Nr=N, Mr=M, dtype_input='complex128', aoptBool=False, tasklet_type='Python'))
         list_of_functions.append(test_batched_DFTc      (backend = 'CPU', Nr=N, Mr=M, dtype_input='complex128', aoptBool=False, tasklet_type='CPP'))
         #list_of_functions.append(test_batched_DFTc      (backend = 'CPU', Nr=N, Mr=M, dtype_input='complex128', aoptBool=True, tasklet_type='CPP'))
         print('DFT_r2r')
@@ -919,12 +936,15 @@ def main():
         print('DFT_r2r_AoS')
         list_of_functions.append(test_batched_DFT_r2r_AoS(backend = 'CPU', Nr=N, Mr=M*2, dtype_input='complex128', aoptBool=False))    
         list_of_functions.append(test_batched_DFT_r2r_AoS(backend = 'CPU', Nr=N, Mr=M*2, dtype_input='complex128', aoptBool=True))
-        print('DFT_r2r_SoA')
+        #print('DFT_r2r_SoA')
         print('-----')
-        #list_of_functions.append(test_batched_DFTc      (backend = 'CPU', Nr=N, dtype_input='complex64', aoptBool=False, tasklet_type='Python'))
+        print('DFTc')
+        # list_of_functions.append(test_batched_DFTc      (backend = 'CPU', Nr=N, dtype_input='complex64', aoptBool=False, tasklet_type='Python'))
         list_of_functions.append(test_batched_DFTc      (backend = 'CPU', Nr=N, Mr=M, dtype_input='complex64', aoptBool=False, tasklet_type='CPP'))
+        print('DFT_r2r')
         list_of_functions.append(test_batched_DFTr2r    (backend = 'CPU', Nr=N, Mr=M, dtype_input='complex64' , aoptBool=False))
         list_of_functions.append(test_batched_DFTr2r    (backend = 'CPU', Nr=N, Mr=M, dtype_input='complex64' , aoptBool=True))
+        print('DFT_r2r_AoS')
         list_of_functions.append(test_batched_DFT_r2r_AoS(backend = 'CPU', Nr=N, Mr=M*2, dtype_input='complex64' , aoptBool=False))
         list_of_functions.append(test_batched_DFT_r2r_AoS(backend = 'CPU', Nr=N, Mr=M*2, dtype_input='complex64' , aoptBool=True))
 
