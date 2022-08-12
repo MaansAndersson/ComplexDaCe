@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
 """
         function_file.write(main)
 
-def create_main_fileDFTc_complex64(function,type,N):
+def create_main_fileDFTc_complex64(function,type,N,M):
     path = os.getcwd()+'/main_'+function+'.cpp'
     function_file = open(path,'w')
 
@@ -87,22 +87,23 @@ def create_main_fileDFTc_complex64(function,type,N):
 int main(int argc, char **argv) {
     
     long long N = """+str(N)+""";
+    long long M = """+str(M)+""";
     int runs = atoi(argv[1]); //Well lol; 
     double time[runs];
     auto tstart =  std::chrono::high_resolution_clock::now(); // Remove ::now()
     auto tstop =  std::chrono::high_resolution_clock::now(); // Remove ::now()
-    dace::complex64 * __restrict__ x = (dace::complex64*) calloc(N, sizeof(dace::complex64));
+    dace::complex64 * __restrict__ x = (dace::complex64*) calloc(M * N, sizeof(dace::complex64));
     
     """+function+"""Handle_t handle;
-        handle = __dace_init_"""+function+"""(N);
+        handle = __dace_init_"""+function+"""(M, N);
 
         for(int i = 0; i < runs; i++){
         //change to not only allocate new but re-write random. 
 
-        dace::complex64 * __restrict__ x = (dace::complex64*) calloc(N, sizeof(dace::complex64));
+        dace::complex64 * __restrict__ x = (dace::complex64*) calloc(M * N, sizeof(dace::complex64));
         tstart = std::chrono::high_resolution_clock::now();
         
-        __program_"""+function+"""(handle, x, N);
+        __program_"""+function+"""(handle, x, M, N);
         
         tstop = std::chrono::high_resolution_clock::now(); 
 
@@ -124,7 +125,7 @@ int main(int argc, char **argv) {
 """
     function_file.write(main)
 
-def create_main_fileDFTc_complex128(function,type,N):
+def create_main_fileDFTc_complex128(function,type,N,M):
     path = os.getcwd()+'/main_'+function+'.cpp'
     function_file = open(path,'w')
 
@@ -140,22 +141,23 @@ def create_main_fileDFTc_complex128(function,type,N):
 int main(int argc, char **argv) {
     
     long long N = """+str(N)+""";
+    long long M = """+str(M)+""";
     int runs = atoi(argv[1]); //Well lol; 
     double time[runs];
     auto tstart =  std::chrono::high_resolution_clock::now(); // Remove ::now()
     auto tstop =  std::chrono::high_resolution_clock::now(); // Remove ::now()
-    dace::complex128 * __restrict__ x = (dace::complex128*) calloc(N, sizeof(dace::complex128));
+    dace::complex128 * __restrict__ x = (dace::complex128*) calloc(M * N, sizeof(dace::complex128));
     
     """+function+"""Handle_t handle;
-        handle = __dace_init_"""+function+"""(N);
+        handle = __dace_init_"""+function+"""(M, N);
 
         for(int i = 0; i < runs; i++){
         //change to not only allocate new but re-write random. 
 
-        dace::complex128 * __restrict__ x = (dace::complex128*) calloc(N, sizeof(dace::complex128));
+        dace::complex128 * __restrict__ x = (dace::complex128*) calloc(M * N, sizeof(dace::complex128));
         tstart = std::chrono::high_resolution_clock::now();
         
-        __program_"""+function+"""(handle, x, N);
+        __program_"""+function+"""(handle, x, M, N);
         
         tstop = std::chrono::high_resolution_clock::now(); 
 
@@ -177,7 +179,7 @@ int main(int argc, char **argv) {
 """
     function_file.write(main)
     
-def create_main_fileDFTr2r_complex128(function,type,N):
+def create_main_fileDFTr2r_complex128(function,type,N,M):
     path = os.getcwd()+'/main_'+function+'.cpp'
     function_file = open(path,'w')
     main="""
@@ -192,6 +194,7 @@ def create_main_fileDFTr2r_complex128(function,type,N):
 int main(int argc, char **argv) {
     
     long long N = """+str(N)+""";
+    long long M = """+str(M)+""";
     int runs = atoi(argv[1]); //Well lol; 
     double time[runs];
     auto tstart =  std::chrono::high_resolution_clock::now(); // Remove ::now()
@@ -200,16 +203,16 @@ int main(int argc, char **argv) {
     double * __restrict__ xr = (double*) calloc(N, sizeof(double));
     
     """+function+"""Handle_t handle;
-        handle = __dace_init_"""+function+"""(N);
+        handle = __dace_init_"""+function+"""(M, N);
 
         for(int i = 0; i < runs; i++){
         //change to not only allocate new but re-write random. 
 
-        double * __restrict__ xi = (double*) calloc(N, sizeof(double));
-        double * __restrict__ xr = (double*) calloc(N, sizeof(double));
+        double * __restrict__ xi = (double*) calloc(M * N, sizeof(double));
+        double * __restrict__ xr = (double*) calloc(M * N, sizeof(double));
         tstart = std::chrono::high_resolution_clock::now();
         
-        __program_"""+function+"""(handle, xi, xr, N);
+        __program_"""+function+"""(handle, xi, xr, M, N);
         
         tstop = std::chrono::high_resolution_clock::now(); 
 
@@ -233,7 +236,7 @@ int main(int argc, char **argv) {
     function_file.write(main)
 
     
-def create_main_fileDFTr2r_complex64(function,type,N):
+def create_main_fileDFTr2r_complex64(function,type,N,M):
     path = os.getcwd()+'/main_'+function+'.cpp'
     function_file = open(path,'w')
     main="""
@@ -248,24 +251,25 @@ def create_main_fileDFTr2r_complex64(function,type,N):
 int main(int argc, char **argv) {
     
     long long N = """+str(N)+""";
+    long long M = """+str(M)+""";
     int runs = atoi(argv[1]); //Well lol; 
     double time[runs];
     auto tstart =  std::chrono::high_resolution_clock::now(); // Remove ::now()
     auto tstop =  std::chrono::high_resolution_clock::now(); // Remove ::now()
-    float * __restrict__ xi = (float*) calloc(N, sizeof(float));
-    float * __restrict__ xr = (float*) calloc(N, sizeof(float));
+    float * __restrict__ xi = (float*) calloc(M * N, sizeof(float));
+    float * __restrict__ xr = (float*) calloc(M * N, sizeof(float));
     
     """+function+"""Handle_t handle;
-        handle = __dace_init_"""+function+"""(N);
+        handle = __dace_init_"""+function+"""(M, N);
 
         for(int i = 0; i < runs; i++){
         //change to not only allocate new but re-write random. 
 
-        float * __restrict__ xi = (float*) calloc(N, sizeof(float));
-        float * __restrict__ xr = (float*) calloc(N, sizeof(float));
+        float * __restrict__ xi = (float*) calloc(M * N, sizeof(float));
+        float * __restrict__ xr = (float*) calloc(M * N, sizeof(float));
         tstart = std::chrono::high_resolution_clock::now();
         
-        __program_"""+function+"""(handle, xi, xr, N);
+        __program_"""+function+"""(handle, xi, xr, M, N);
         
         tstop = std::chrono::high_resolution_clock::now(); 
 
@@ -288,7 +292,7 @@ int main(int argc, char **argv) {
 """
     function_file.write(main)
 
-def create_main_fileDFTr2rN2_complex64(function,type,N):
+def create_main_fileDFTr2rN2_complex64(function,type,N,M):
     path = os.getcwd()+'/main_'+function+'.cpp'
     function_file = open(path,'w')
     main="""
